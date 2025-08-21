@@ -1,0 +1,171 @@
+{
+    "project_name": "Smart_House",
+    "project_owner": "Group_7",
+    "device_list": [
+        {
+            "deviceID": 0,
+            "deviceName": "Kitchen-Temp",
+            "measureType": "Temperature",
+            "availableServices": [
+                {
+                    "serviceType": "MQTT",
+                    "serviceIP": "mqtt.eclipseprojects.io",
+                    "topics": [
+                        "iot_project/sensors/kitchen/temperature"
+                    ]
+                }
+            ],
+            "lastUpdate": "2025-05-15"
+        },
+        {
+            "deviceID": 1,
+            "deviceName": "Kitchen-Light",
+            "measureType": "Light",
+            "availableServices": [
+                {
+                    "serviceType": "MQTT",
+                    "serviceIP": "mqtt.eclipseprojects.io",
+                    "topics": [
+                        "iot_project/sensors/kitchen/light"
+                    ]
+                }
+            ],
+            "lastUpdate": "2025-05-15"
+        },
+        {
+            "deviceID": 2,
+            "deviceName": "LivingRoom-Temp",
+            "measureType": "Temperature",
+            "availableServices": [
+                {
+                    "serviceType": "MQTT",
+                    "serviceIP": "mqtt.eclipseprojects.io",
+                    "topics": [
+                        "iot_project/sensors/livingroom/temperature"
+                    ]
+                }
+            ],
+            "lastUpdate": "2025-05-15"
+        },
+        {
+            "deviceID": 3,
+            "deviceName": "LivingRoom-Light",
+            "measureType": "Light",
+            "availableServices": [
+                {
+                    "serviceType": "MQTT",
+                    "serviceIP": "mqtt.eclipseprojects.io",
+                    "topics": [
+                        "iot_project/sensors/livingroom/light"
+                    ]
+                }
+            ],
+            "lastUpdate": "2025-05-15"
+        },
+        {
+            "deviceID": 4,
+            "deviceName": "Garage-Temp",
+            "measureType": "Temperature",
+            "availableServices": [
+                {
+                    "serviceType": "MQTT",
+                    "serviceIP": "mqtt.eclipseprojects.io",
+                    "topics": [
+                        "iot_project/sensors/garage/temperature"
+                    ]
+                }
+            ],
+            "lastUpdate": "2025-05-15"
+        },
+        {
+            "deviceID": 5,
+            "deviceName": "Garage-Light",
+            "measureType": "Light",
+            "availableServices": [
+                {
+                    "serviceType": "MQTT",
+                    "serviceIP": "mqtt.eclipseprojects.io",
+                    "topics": [
+                        "iot_project/sensors/garage/light"
+                    ]
+                }
+            ],
+            "lastUpdate": "2025-05-15"
+        },
+        {
+            "deviceID": 7,
+            "deviceName": "Basement-Temp",
+            "measureType": "Temperature",
+            "availableServices": [
+                {
+                    "serviceType": "MQTT",
+                    "serviceIP": "mqtt.eclipseprojects.io",
+                    "topics": [
+                        "iot_project/sensors/basement/temperature"
+                    ]
+                }
+            ],
+            "lastUpdate": "2025-07-08"
+        },
+        {
+            "deviceID": 8,
+            "deviceName": "Bathroom-Temp",
+            "measureType": "Temperature",
+            "availableServices": [
+                {
+                    "serviceType": "MQTT",
+                    "serviceIP": "mqtt.eclipseprojects.io",
+                    "topics": [
+                        "iot_project/sensors/bathroom/temperature"
+                    ]
+                }
+            ],
+            "lastUpdate": "2025-07-21"
+        },
+        {
+            "deviceID": 9,
+            "deviceName": "Bedroom-Temp",
+            "measureType": "Temperature",
+            "availableServices": [
+                {
+                    "serviceType": "MQTT",
+                    "serviceIP": "mqtt.eclipseprojects.io",
+                    "topics": [
+                        "iot_project/sensors/bedroom/temperature"
+                    ]
+                }
+            ],
+            "lastUpdate": "2025-07-26"
+        },
+        {
+            "deviceID": 10,
+            "deviceName": "Bedroom-Light",
+            "measureType": "Light",
+            "availableServices": [
+                {
+                    "serviceType": "MQTT",
+                    "serviceIP": "mqtt.eclipseprojects.io",
+                    "topics": [
+                        "iot_project/sensors/bedroom/light"
+                    ]
+                }
+            ],
+            "lastUpdate": "2025-07-26"
+        },
+        {
+            "deviceID": 11,
+            "deviceName": "Basement-Light",
+            "measureType": "Light",
+            "availableServices": [
+                {
+                    "serviceType": "MQTT",
+                    "serviceIP": "mqtt.eclipseprojects.io",
+                    "topics": [
+                        "iot_project/sensors/basement/light"
+                    ]
+                }
+            ],
+            "lastUpdate": "2025-07-29"
+        }
+    ]
+}
