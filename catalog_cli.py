@@ -2,16 +2,11 @@
 import json
 import os
 from datetime import datetime
-
-class SensorDevice:
-    def __init__(self, id, name, measure_type, topic):
-        self.id = id
-        self.name = name
-        self.measure_type = measure_type
-        self.topic = topic
+from config import CATALOG_PATH
+from sensor_device import SensorDevice
 
 class CatalogManager:
-    def __init__(self, catalog_file="catalog.json"):
+    def __init__(self, catalog_file=CATALOG_PATH):
         self.catalog_file = catalog_file
         self.load()
 

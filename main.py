@@ -1,77 +1,88 @@
-import time
+"""Run the local dashboard; all startup happens inside main()."""
+import argparse
+import logging
+import os
 import threading
-from MyMQTT import MyMQTT
-from catalog_manager import CatalogManager
-from publisher import SensorPublisher
-from subscriber import DynamicSubscriber
-from shared_memory import shared_data
-from webserver.app import DashboardWebServer
-from telegram_bot_N import build_bot_and_run  
-from shared_memory import pending_commands
+import time
+from uuid import uuid4
+
+import cherrypy
+from catalog_cli import CatalogManager
+from Webserver import DashboardWebServer
+from shared_memory import add_data, is_paused, set_runtime
 
 
-def run_webserver():
-    import cherrypy
-    cherrypy.quickstart(DashboardWebServer(), '/', {
-        '/': {
-            'tools.sessions.on': True,
-        }
-    })
-    
-def handle_telegram_command(cmd, mqtt):
-    parts = cmd.split()
-    if len(parts) != 2:
-        print("[ERROR] Invalid command format. Expected: light_on room")
-        return
-
-    action, room = parts
-    topic = f"iot_project/sensors/{room}/light"
-
-    if action == "light_on":
-        mqtt.myPublish(topic, "ON") 
-    elif action == "light_off":
-        mqtt.myPublish(topic, "OFF") 
-    else:
-        print(f"[ERROR] Unknown action: {action}")
+def demo_loop(catalog, stop):
+    while not stop.is_set():
+        for device in catalog.get_devices():
+            if not is_paused(device.id):
+                add_data({"Device ID": device.id, "Device Name": device.name,
+                          "Measurement Type": device.measure_type, "Unit": device.unit,
+                          "Value": device.generate_value(), "Topic": device.topic,
+                          "Room": device.topic.split("/")[2],
+                          "Timestamp": time.strftime("%Y-%m-%d %H:%M:%S")})
+        stop.wait(5)
 
 
-
-def run_iot_mqtt_logic():
-    client_id = "SmartHouseClient_8"
-    broker = "broker.hivemq.com"
-    port = 1883
-
-    mqtt = MyMQTT(client_id, broker, port)
-
-    catalog = CatalogManager("catalog.json")
-
+def mqtt_loop(catalog, stop):
+    from MyMQTT import MyMQTT
+    from publisher import SensorPublisher
+    from subscriber import DynamicSubscriber
+    mqtt = MyMQTT("SmartHouse-" + uuid4().hex[:12],
+                  os.environ.get("MQTT_BROKER", "broker.hivemq.com"),
+                  int(os.environ.get("MQTT_PORT", "1883")))
     subscriber = DynamicSubscriber(mqtt, catalog)
     mqtt.notifier = subscriber
-
     publisher = SensorPublisher(mqtt, catalog)
-
     mqtt.start()
-
-    time.sleep(2)
-    while True:
-        catalog.load()
-        subscriber.update_subscriptions()
-        publisher.publish_all()
-
-        
-        while pending_commands:
-            cmd = pending_commands.pop(0)
-            print(f"[TELEGRAM → MQTT] Publishing command: {cmd}")
-            handle_telegram_command(cmd, mqtt)
-
-        time.sleep(10)
+    try:
+        while not stop.is_set():
+            subscriber.update_subscriptions()
+            publisher.publish_all()
+            stop.wait(10)
+    finally:
+        mqtt.stop()
 
 
+def main():
+    parser = argparse.ArgumentParser(description="Smart Home Sensors dashboard")
+    parser.add_argument("--demo", action="store_true", help="Local simulated data; no MQTT network")
+    parser.add_argument("--telegram", action="store_true", help="Enable Telegram (requires environment settings)")
+    parser.add_argument("--port", type=int, default=8080)
+    args = parser.parse_args()
+    bot = None
+    if args.telegram:
+        from telegram_bot_N import build_application
+        bot = build_application()
+    catalog = CatalogManager()
+    stop = threading.Event()
+    set_runtime(mode="demo" if args.demo else "mqtt", error=None)
 
-threading.Thread(target=run_iot_mqtt_logic, daemon=True).start()
-threading.Thread(target=run_webserver, daemon=True).start()
+    def run_worker():
+        try:
+            (demo_loop if args.demo else mqtt_loop)(catalog, stop)
+        except Exception:
+            logging.exception("Sensor worker stopped")
+            set_runtime(error="Sensor worker stopped. Check the application log.")
+
+    worker = threading.Thread(target=run_worker, daemon=True)
+    cherrypy.config.update({"server.socket_host": "127.0.0.1", "server.socket_port": args.port,
+                            "engine.autoreload.on": False, "log.screen": True})
+    cherrypy.tree.mount(DashboardWebServer(catalog), "/")
+    worker.start()
+    try:
+        cherrypy.engine.start()
+        print(f"Dashboard: http://127.0.0.1:{args.port} (simulated sensors)")
+        if bot:
+            bot.run_polling()
+        else:
+            cherrypy.engine.block()
+    finally:
+        stop.set()
+        worker.join(timeout=5)
+        cherrypy.engine.exit()
+        set_runtime(mode="stopped")
 
 
-if __name__ == '__main__':
-    print("[MAIN] Starting Telegram bot...")
-    build_bot_and_run()
+if __name__ == "__main__":
+    main()

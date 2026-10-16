@@ -1,73 +1,39 @@
+"""Local dashboard and JSON endpoints. No services start on import."""
 import cherrypy
-import sys
-import os
-sys.path.append(os.path.abspath(".."))
-from shared_memory import shared_data, add_data
+from catalog_cli import CatalogManager
+from config import ROOT
+from shared_memory import control_sensor
+from sensor_views import sensor_status
 
-print(f"[APP] Shared data memory location: {id(shared_data)}")
 
 class DashboardWebServer:
+    def __init__(self, catalog=None):
+        self.catalog = catalog or CatalogManager()
 
     @cherrypy.expose
     def index(self):
-        html = """
-        <html>
-            <head>
-                <title>Smart House Dashboard</title>
-                <meta http-equiv="refresh" content="10">
-                <style>
-                    body { font-family: Arial; margin: 40px; background-color: #f5f5f5; }
-                    table { border-collapse: collapse; width: 100%; background: white; }
-                    th, td { border: 1px solid #aaa; padding: 8px; text-align: center; }
-                    th { background-color: #444; color: white; }
-                    h1 { color: #333; }
-                </style>
-            </head>
-            <body>
-                <h1>Live Sensor Data</h1>
-                <table>
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>Device ID</th>
-                        <th>Device Name</th>
-                        <th>Measurement Type</th>
-                        <th>Value</th>
-                        <th>Unit</th>
-                        <th>Room</th>
-                        <th>Topic</th>
-                    </tr>
-        """
+        cherrypy.response.headers["Cache-Control"] = "no-store"
+        return (ROOT / "dashboard.html").read_text(encoding="utf-8")
 
-        
-        for row in reversed(shared_data[-50:]):  
-            html += f"""
-                <tr>
-                    <td>{row['Timestamp']}</td>
-                    <td>{row['Device ID']}</td>
-                    <td>{row['Device Name']}</td>
-                    <td>{row['Measurement Type']}</td>
-                    <td>{row['Value']}</td>
-                    <td>{row['Unit']}</td>
-                    <td>{row['Room']}</td>
-                    <td>{row['Topic']}</td>
-                </tr>
-            """
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def status(self):
+        cherrypy.response.headers["Cache-Control"] = "no-store"
+        return sensor_status(self.catalog)
 
-        html += """
-                </table>
-            </body>
-        </html>
-        """
-        print(f"[APP] Shared data has {len(shared_data)} rows")
-
-        return html
-
-
-if __name__ == '__main__':
-    cherrypy.quickstart(DashboardWebServer(), '/', {
-        '/': {
-            'tools.sessions.on': True,
-        }
-    })
-
-print(f"[APP] Shared data memory location: {id(shared_data)}")
+    @cherrypy.expose
+    @cherrypy.tools.json_in()
+    @cherrypy.tools.json_out()
+    def control(self):
+        if cherrypy.request.method != "POST":
+            raise cherrypy.HTTPError(405, "Use POST")
+        # The header forces browser cross-origin requests to preflight; no CORS is enabled.
+        if cherrypy.request.headers.get("X-SmartHome-Client") != "dashboard":
+            raise cherrypy.HTTPError(403, "Use the dashboard controls")
+        payload = cherrypy.request.json
+        if not isinstance(payload, dict):
+            raise cherrypy.HTTPError(400, "Expected a JSON object")
+        try:
+            return control_sensor(payload.get("device_id"), payload.get("action"), self.catalog)
+        except ValueError as error:
+            raise cherrypy.HTTPError(400, str(error)) from error

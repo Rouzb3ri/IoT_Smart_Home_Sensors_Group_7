@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Home · Sensor overview</title>
+<style>
+:root{color-scheme:light;--ink:#192c2b;--muted:#607370;--green:#236854;--line:#dbe4df;--paper:#f3f6f2}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 "Segoe UI",system-ui,sans-serif}
+button,select{font:inherit}button,select,a{touch-action:manipulation}button{cursor:pointer}button:disabled{cursor:wait;opacity:.6}
+button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #b8762e;outline-offset:4px}
+header{background:#183b34;color:#fff;padding:25px max(24px,calc((100% - 1180px)/2)) 50px}
+.top,.title-row,.tools,.card-head,.card-foot,.section-head{display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{font-weight:700;letter-spacing:.02em}.brand span{display:inline-block;background:#b8dec3;color:#183b34;padding:3px 10px;border-radius:6px;margin-right:10px}
+.top a{color:#d5e7df;text-decoration:none;font-size:13px}.eyebrow{text-transform:uppercase;font-size:11px;letter-spacing:.16em;font-weight:700;color:#a6c3b4;margin:40px 0 8px}h1{font-size:clamp(30px,4vw,44px);line-height:1.15;font-weight:600;letter-spacing:-.04em;margin:0 0 12px}header p{color:#c1d3ca;margin:0;max-width:600px}.connection{white-space:nowrap;background:#294e45;border:1px solid #57786b;padding:8px 13px;border-radius:30px;font-size:12px}
+main{max-width:1228px;margin:auto;padding:0 24px 40px}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;margin-top:-25px;overflow:hidden}.stat{background:white;padding:20px 24px}.stat small{color:var(--muted);display:block;font-size:12px}.stat strong{font-size:27px;font-weight:600}.stat em{font-size:12px;font-style:normal;color:var(--muted);margin-left:9px}
+.section-head{margin:35px 0 18px;align-items:flex-end}h2{font-size:21px;letter-spacing:-.025em;margin:0}.sub{font-size:13px;color:var(--muted);margin:4px 0 0}.tools{gap:10px;flex-wrap:wrap}.tools label{font-size:12px;color:var(--muted)}select,button{border:1px solid #ccd9d1;background:white;color:var(--ink);padding:9px 12px;border-radius:8px}button:hover{background:#edf4ee}.unit{padding:8px 12px}.unit[aria-pressed=true]{background:var(--green);color:white;border-color:var(--green)}
+#notice{background:#fff4df;border:1px solid #e3c394;padding:12px 16px;border-radius:9px;margin:20px 0 0}#notice[hidden]{display:none}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.sensor{background:white;border:1px solid var(--line);border-radius:13px;padding:21px;min-width:0}.room{text-transform:uppercase;letter-spacing:.13em;font-size:10px;color:var(--muted);font-weight:700}.sensor h3{font-size:16px;margin:4px 0 0;overflow-wrap:anywhere}.badge{font-size:11px;white-space:nowrap;padding:4px 9px;border-radius:20px;background:#e6f3e8;color:#286944}.badge.stale,.badge.waiting{background:#fff1db;color:#855719}.badge.paused{background:#e9edef;color:#52626a}.value{font-size:44px;letter-spacing:-.05em;line-height:1.2;margin:26px 0 2px;font-weight:500}.value small{font-size:18px;letter-spacing:0;color:var(--muted);margin-left:5px}.type{font-size:12px;color:var(--muted)}.card-foot{margin-top:24px;padding-top:15px;border-top:1px solid #edf0eb;font-size:11px;color:var(--muted)}.card-foot button{font-size:11px;padding:6px 10px}.empty{padding:45px 20px;background:white;border:1px dashed #bccdc1;border-radius:12px;color:var(--muted);grid-column:1/-1;text-align:center}.activity{margin-top:30px;border:1px solid var(--line);border-radius:13px;background:white;padding:22px}.activity h2{font-size:17px}.activity ul{list-style:none;margin:14px 0 0;padding:0}.activity li{padding:10px 0;border-top:1px solid #edf0eb;font-size:13px}.activity time{color:var(--muted);font-size:11px;margin-left:10px}.footer{display:flex;justify-content:space-between;gap:20px;color:var(--muted);font-size:11px;margin-top:24px}.footer p{margin:0}#announcement{min-height:24px;margin-top:14px;font-size:13px;color:var(--green)}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.section-head{align-items:flex-start;flex-direction:column}.title-row{align-items:flex-start;flex-direction:column}.connection{margin-top:12px}}
+@media(max-width:560px){header{padding:22px 20px 50px}.grid{grid-template-columns:1fr}main{padding:0 16px 30px}.stat{padding:17px 12px}.stat strong{font-size:23px}.stat em{display:block;margin:0}.tools{gap:7px}.top a{display:none}.footer{flex-direction:column;gap:8px}}
+</style>
+</head>
+<body>
+<header>
+ <div class="top"><div class="brand"><span>⌂</span> Smart Home</div><a href="#activity">Recent activity ↗</a></div>
+ <p class="eyebrow">Your home, at a glance</p>
+ <div class="title-row"><div><h1>A little more connected.</h1><p>Temperature and light readings from every room, in one place.</p></div><div class="connection" id="connection" role="status">Connecting…</div></div>
+</header>
+<main>
+ <section class="summary" aria-label="Home summary">
+  <div class="stat"><small>Configured sensors</small><strong id="total">—</strong><em>Across your home</em></div>
+  <div class="stat"><small>Fresh readings</small><strong id="fresh">—</strong><em>Received within 30s</em></div>
+  <div class="stat"><small>Needs attention</small><strong id="attention">—</strong><em>Waiting, stale or paused</em></div>
+ </section>
+ <div id="notice" role="alert" hidden></div>
+ <section aria-labelledby="sensor-heading">
+  <div class="section-head"><div><h2 id="sensor-heading">Room by room</h2><p class="sub">Simulated sensors · refreshes every 5 seconds</p></div>
+   <div class="tools"><label for="room">Room</label><select id="room"><option value="">All rooms</option></select><button id="celsius" class="unit" aria-pressed="true">°C</button><button id="fahrenheit" class="unit" aria-pressed="false">°F</button><button id="refresh">Refresh ↻</button></div>
+  </div>
+  <div id="sensors" class="grid"><div class="empty">Connecting to your home…</div></div>
+  <div id="announcement" role="status" aria-live="polite"></div>
+ </section>
+ <section id="activity" class="activity" aria-labelledby="activity-heading"><h2 id="activity-heading">Recent activity</h2><p class="sub">Simulation controls from the dashboard and Telegram.</p><ul id="actions"><li>No changes yet.</li></ul></section>
+ <div class="footer"><p>Pause / Resume controls the sensor simulation. It does not switch physical lights or heating.</p><p id="updated">Waiting for first update</p></div>
+</main>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+let data = null, unit = 'C', loading = false, connected = false;
+const pending = new Set();
+const roomLabel = room => room.replace('livingroom','living room').replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
+function el(tag, cls, text) { const node=document.createElement(tag); if(cls)node.className=cls; if(text!==undefined)node.textContent=text; return node; }
+function stateOf(d) { if(d.state==='paused')return 'paused'; if(!d.reading)return 'waiting'; return Date.now()-Date.parse(d.reading.received_at)>30000?'stale':'live'; }
+function render() {
+ if(!data)return;
+ const focused=document.activeElement?.dataset?.sensor;
+ const current=$('room').value, rooms=[...new Set(data.devices.map(d=>d.room))].sort();
+ const existing=Array.from($('room').options).slice(1).map(o=>o.value);
+ if(JSON.stringify(existing)!==JSON.stringify(rooms))$('room').replaceChildren(new Option('All rooms',''),...rooms.map(r=>new Option(roomLabel(r),r)));
+ $('room').value=rooms.includes(current)?current:'';
+ $('total').textContent=data.devices.length;
+ const fresh=data.devices.filter(d=>stateOf(d)==='live').length;
+ $('fresh').textContent=connected?fresh:'—'; $('attention').textContent=connected?data.devices.length-fresh:'—';
+ $('celsius').setAttribute('aria-pressed',String(unit==='C'));$('fahrenheit').setAttribute('aria-pressed',String(unit==='F'));
+ const cards=data.devices.filter(d=>!$('room').value||d.room===$('room').value).map(d=>{
+  const state=stateOf(d), card=el('article','sensor'),head=el('div','card-head'),title=el('div');
+  title.append(el('div','room',roomLabel(d.room)),el('h3','',d.name));head.append(title,el('span','badge '+state,connected?state:'offline'));card.append(head);
+  let value='—',suffix='';
+  if(d.reading){let v=d.reading.Value;if(d.type.toLowerCase()==='temperature'){if(unit==='F')v=v*9/5+32;value=v.toFixed(1);suffix='°'+unit;}else{value=v.toFixed(0);suffix='lux';}}
+  const reading=el('div','value',value);reading.append(el('small','',suffix));card.append(reading,el('div','type',d.type));
+  const foot=el('div','card-foot');const age=d.reading?Math.max(0,Math.floor((Date.now()-Date.parse(d.reading.received_at))/1000)):null;
+  foot.append(el('span','',age===null?'No readings yet':`Received ${age}s ago`));
+  const button=el('button','',pending.has(d.id)?'Saving…':state==='paused'?'Resume':'Pause');
+  button.dataset.sensor=String(d.id);
+  button.setAttribute('aria-label',`${state==='paused'?'Resume':'Pause'} simulation for ${d.name}`);
+  button.disabled=!connected||pending.has(d.id)||!['demo','mqtt'].includes(data.runtime.mode)||Boolean(data.runtime.error);
+  button.addEventListener('click',()=>control(d.id,state==='paused'?'resume':'pause'));foot.append(button);card.append(foot);return card;
+ });
+ $('sensors').replaceChildren(...(cards.length?cards:[el('div','empty','No sensors configured. Add sensors with catalog_cli.py.')]));
+ if(focused!==undefined)Array.from($('sensors').querySelectorAll('button')).find(b=>b.dataset.sensor===focused)?.focus({preventScroll:true});
+ const names=new Map(data.devices.map(d=>[String(d.id),d.name]));
+ const actions=data.actions.slice(0,8).map(a=>{const row=el('li','',`${names.get(a.device_id)||a.device_id} · ${a.action==='pause'?'Paused':'Resumed'} by ${a.actor}`);row.append(el('time','',new Date(a.timestamp).toLocaleTimeString()));return row;});
+ $('actions').replaceChildren(...(actions.length?actions:[el('li','','No changes yet. Your next simulation action will appear here.')]));
+}
+async function refresh() {
+ if(loading)return;loading=true;$('refresh').disabled=true;
+ try{
+  const response=await fetch('/status',{cache:'no-store',signal:AbortSignal.timeout(8000)});if(!response.ok)throw new Error('status');
+  data=await response.json();connected=true;
+  $('connection').textContent=data.runtime.mode==='demo'?'● Local demo':data.runtime.mqtt_connected?'● MQTT connected':'○ MQTT offline';
+  const issue=data.runtime.error||(data.runtime.mode==='mqtt'&&!data.runtime.mqtt_connected?'MQTT is offline. Readings may be stale; reconnecting automatically.':'');
+  $('notice').hidden=!issue;$('notice').textContent=issue;$('updated').textContent='Updated '+new Date().toLocaleTimeString();
+ }catch(error){connected=false;$('connection').textContent='○ Dashboard offline';$('notice').hidden=false;$('notice').textContent='Unable to refresh. Check that the app is running; retrying automatically.';if(!data)$('sensors').replaceChildren(el('div','empty','No connection yet. Start the app, then choose Refresh.'));}
+ finally{loading=false;$('refresh').disabled=false;render();}
+}
+async function control(id,action){
+ pending.add(id);render();
+ try{
+  const response=await fetch('/control',{method:'POST',headers:{'Content-Type':'application/json','X-SmartHome-Client':'dashboard'},body:JSON.stringify({device_id:id,action}),signal:AbortSignal.timeout(8000)});
+  if(!response.ok)throw new Error('control');
+  // Reflect the acknowledged state immediately, even if the next refresh is delayed.
+  const d=data.devices.find(d=>d.id===id);if(d)d.state=action==='pause'?'paused':d.reading?'live':'waiting';
+  $('announcement').textContent=`Simulation ${action==='pause'?'paused':'resumed'}.`;
+  await refresh();
+ }catch(error){$('announcement').textContent='Could not confirm the change. Refresh to check its state before trying again.';}
+ finally{pending.delete(id);render();}
+}
+$('room').addEventListener('change',render);$('celsius').addEventListener('click',()=>{unit='C';render();});$('fahrenheit').addEventListener('click',()=>{unit='F';render();});$('refresh').addEventListener('click',refresh);
+refresh();setInterval(refresh,5000);
+</script>
+</body></html>
