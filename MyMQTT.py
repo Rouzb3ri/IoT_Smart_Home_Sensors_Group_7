@@ -1,101 +1,69 @@
-
-import paho.mqtt.client as PahoMQTT
+"""Paho 2 adapter with subscriptions restored after reconnect."""
 import json
+import logging
+import paho.mqtt.client as PahoMQTT
+from shared_memory import set_runtime
+
+log = logging.getLogger(__name__)
+
 
 class MyMQTT:
-    def __init__(self, clientID, broker, port, notifier=None, qos=2):
-        self.broker = broker
-        self.port = port
+    def __init__(self, clientID, broker, port, notifier=None, qos=1):
         self.notifier = notifier
-        self.clientID = clientID
-        self.qos = qos
-        self._topics = set()
-        self._isSubscriber = False
+        self.broker, self.port, self.qos = broker, port, qos
+        self._topics = {}
         self._isConnected = False
-
-        self._paho_mqtt = PahoMQTT.Client(client_id=clientID, clean_session=True)
-
+        self._paho_mqtt = PahoMQTT.Client(PahoMQTT.CallbackAPIVersion.VERSION2, client_id=clientID)
         self._paho_mqtt.on_connect = self.myOnConnect
-        self._paho_mqtt.on_message = self.myOnMessageReceived
         self._paho_mqtt.on_disconnect = self.myOnDisconnect
+        self._paho_mqtt.on_message = self.myOnMessageReceived
+        self._paho_mqtt.reconnect_delay_set(1, 30)
 
-    def myOnConnect(self, paho_mqtt, userdata, flags, rc):
-        if rc == 0:
-            self._isConnected = True
-            print(f"[INFO] Connected to {self.broker}:{self.port} with result code {rc}")
-        else:
-            print(f"[ERROR] Connection failed with code {rc}")
+    def myOnConnect(self, client, userdata, flags, reason_code, properties):
+        self._isConnected = reason_code == 0
+        set_runtime(mqtt_connected=self._isConnected,
+                    error=None if self._isConnected else "MQTT broker rejected the connection")
+        if self._isConnected:
+            for topic, qos in self._topics.copy().items():
+                client.subscribe(topic, qos)
 
-    def myOnMessageReceived(self, paho_mqtt, userdata, msg):
-        print(f"[DEBUG] MQTT message received on {msg.topic}")
-        try:
-            payload = msg.payload.decode("utf-8")
-            print(f"[DEBUG] Payload received: {payload}")
-            if self.notifier:
-                self.notifier.notify(msg.topic, payload)
-        except Exception as e:
-            print(f"[ERROR] Failed to decode or notify: {e}")
-
-
-    def myOnDisconnect(self, paho_mqtt, userdata, rc):
+    def myOnDisconnect(self, client, userdata, flags, reason_code, properties):
         self._isConnected = False
-        print(f"[INFO] Disconnected from {self.broker}:{self.port}")
+        set_runtime(mqtt_connected=False)
+
+    def myOnMessageReceived(self, client, userdata, msg):
+        try:
+            if self.notifier:
+                self.notifier.notify(msg.topic, msg.payload.decode("utf-8"))
+        except (UnicodeError, ValueError):
+            log.warning("Ignored malformed MQTT message")
 
     def myPublish(self, topic, msg, qos=None):
-        if self._isConnected:
-            qos = qos if qos is not None else self.qos
-            try:
-                self._paho_mqtt.publish(topic, json.dumps(msg), qos)
-                print(f"[INFO] Published to {topic} with QoS {qos}: {json.dumps(msg)}")
-            except Exception as e:
-                print(f"[ERROR] Failed to publish to {topic}: {e}")
-        else:
-            print("[ERROR] Not connected to broker. Cannot publish.")
+        if not self._isConnected:
+            return False
+        result = self._paho_mqtt.publish(topic, json.dumps(msg, allow_nan=False),
+                                         self.qos if qos is None else qos)
+        return result.rc == PahoMQTT.MQTT_ERR_SUCCESS
 
     def mySubscribe(self, topic, qos=None):
+        qos = self.qos if qos is None else qos
+        self._topics[topic] = qos
         if self._isConnected:
-            qos = qos if qos is not None else self.qos
-            if topic not in self._topics:
-                try:
-                    self._paho_mqtt.subscribe(topic, qos)
-                    self._topics.add(topic)
-                    print(f"[INFO] Subscribed to {topic} with QoS {qos}")
-                except Exception as e:
-                    print(f"[ERROR] Failed to subscribe to {topic}: {e}")
-        else:
-            print("[ERROR] Not connected to broker. Cannot subscribe.")
+            result, _ = self._paho_mqtt.subscribe(topic, qos)
+            return result == PahoMQTT.MQTT_ERR_SUCCESS
+        return False
+
+    def unsubscribe(self, topic):
+        self._topics.pop(topic, None)
+        if self._isConnected:
+            self._paho_mqtt.unsubscribe(topic)
 
     def start(self):
-        if not self._isConnected:
-            try:
-                self._paho_mqtt.connect(self.broker, self.port)
-                self._paho_mqtt.loop_start()
-                print(f"[INFO] MQTT client started for {self.clientID}")
-            except Exception as e:
-                print(f"[ERROR] Failed to start MQTT client: {e}")
-
-    def unsubscribe(self, topic=None):
-        if self._isConnected:
-            try:
-                if topic:
-                    self._paho_mqtt.unsubscribe(topic)
-                    self._topics.discard(topic)
-                    print(f"[INFO] Unsubscribed from {topic}")
-                else:
-                    for t in list(self._topics):
-                        self._paho_mqtt.unsubscribe(t)
-                        print(f"[INFO] Unsubscribed from {t}")
-                    self._topics.clear()
-            except Exception as e:
-                print(f"[ERROR] Failed to unsubscribe: {e}")
-        else:
-            print("[ERROR] Not connected to broker. Cannot unsubscribe.")
+        self._paho_mqtt.connect_async(self.broker, self.port, keepalive=60)
+        self._paho_mqtt.loop_start()
 
     def stop(self):
-        if self._isConnected:
-            self.unsubscribe()
-            self._paho_mqtt.loop_stop()
-            self._paho_mqtt.disconnect()
-            self._isConnected = False
-            print(f"[INFO] MQTT client stopped for {self.clientID}")
-
+        self._paho_mqtt.disconnect()
+        self._paho_mqtt.loop_stop()
+        self._isConnected = False
+        set_runtime(mqtt_connected=False)

@@ -1,4 +1,6 @@
 import time
+import logging
+from shared_memory import is_paused
 
 class SensorPublisher:
     def __init__(self, mqtt_client, catalog):
@@ -6,9 +8,11 @@ class SensorPublisher:
         self.catalog = catalog
 
     def publish_all(self):
-        sensors = self.catalog.get_devices()  
+        sensors = self.catalog.get_devices()
         for sensor in sensors:
-            value = sensor.generate_value()   
+            if is_paused(sensor.id):
+                continue
+            value = sensor.generate_value()
             message = {
                 "Device ID": sensor.id,
                 "Device Name": sensor.name,
@@ -17,5 +21,5 @@ class SensorPublisher:
                 "Timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
                 "Value": value
             }
-            self.mqtt.myPublish(sensor.topic, message)  
-            print(f"[PUBLISH] {sensor.topic} → {value} {sensor.unit}")
+            if self.mqtt.myPublish(sensor.topic, message):
+                logging.getLogger(__name__).info("Published simulated reading for %s", sensor.name)
